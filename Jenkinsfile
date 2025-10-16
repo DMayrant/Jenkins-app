@@ -48,7 +48,7 @@ pipeline {
                   npm install serve
                   node_modules/.bin/serve -s build &
                   sleep 10
-                  npx playright test 
+                  npx playright test --reporter=html
 
                 '''
             }
