@@ -35,8 +35,25 @@ pipeline {
                 '''
             }
         }
-    }  
+        stage('E2E') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.56.0-noble'
+                    reuseNode true
+                }
+            }
+            
+            steps {
+                sh '''
+                  npm install -g serve
+                  serve -s build
+                  npx playright test
 
+                '''
+            }
+        }    
+    }
+    
     post { 
         always {
             junit 'test-results/junit.xml'
