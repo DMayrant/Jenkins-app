@@ -57,8 +57,7 @@ pipeline {
     
     post { 
         always {
-            junit '/Users/devonnemayrant/learn-jenkins-app/package.json'
+            junit 'test-results/junit.xml'
         }
     } 
 }
-
