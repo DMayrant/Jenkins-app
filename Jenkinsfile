@@ -21,14 +21,11 @@ pipeline {
         }
         
         stage('Test') {
-            parallel {
-                stage('Unit test') {
-                    agent {
-                        docker {
-                        image 'node:18-alpine'
-                        reuseNode true
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
                 }
-                
             }
             
             steps {
@@ -38,7 +35,20 @@ pipeline {
                 '''
             }
         }
-        
+        stage('Deploy') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                  npm install -g netlify-cli -g
+                  netlify --version
+                '''
+            }
+        }
         stage('E2E') {
             agent {
                 docker {
@@ -51,15 +61,13 @@ pipeline {
                 sh '''
                   npm install serve
                   node_modules/.bin/serve -s build &
-                  sleep 10
                   npx playright test -reporter=html
 
                 '''
             }
         }    
-    }
-    
-         stage('Deploy') {
+       
+        stage('Deploy') {
             agent {
                 docker {
                     image 'node:18-alpine'
@@ -68,12 +76,10 @@ pipeline {
             }
             steps {
                 sh '''
-                  npm install -g netlify-cli
-                  netlify --version
+                    npm install netlify-cli
+                    netlify --version
                 '''
             }
         }
     }
-
-}    
-
+}
