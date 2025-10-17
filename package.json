@@ -9,7 +9,6 @@
     "jest-junit": "^16.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-scripts": "^0.0.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -38,7 +37,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.39.0",
-    "@types/node": "^20.8.6"
+    "@types/node": "^20.8.6",
+    "react-scripts": "^5.0.1"
   },
   "jest-junit": {
     "suiteName": "jest tests",
