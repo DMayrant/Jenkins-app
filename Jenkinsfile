@@ -3,10 +3,10 @@ pipeline {
 
     environment {
         NETLIFY_SITE_ID = 'f7d42348-d921-4174-94f6-ac97d15455f5'
-      
     }
 
     stages {
+
         stage('Build') {
             agent {
                 docker {
@@ -25,10 +25,11 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('Run tests') {
             parallel {
-                 stage('Deploy') {
+
+                stage('Deploy') {
                     agent {
                         docker {
                             image 'node:18-alpine'
@@ -43,7 +44,7 @@ pipeline {
                         '''
                     }
                 }
-                
+
                 stage('E2E') {
                     agent {
                         docker {
@@ -51,20 +52,18 @@ pipeline {
                             reuseNode true
                         }
                     }
-
                     steps {
                         sh '''
                             npm install serve
                             node_modules/.bin/serve -s build &
                             sleep 10
                             npx playwright test --reporter=html
-                            
                         '''
+                    }
                 }
-                
-            }
-        }                
-                    
-                
-    }           
-}                    
+
+            } // end parallel
+        } // end stage Run tests
+
+    } // end stages
+} // end pipeline
