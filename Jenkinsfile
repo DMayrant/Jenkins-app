@@ -75,4 +75,9 @@ pipeline {
             }
         }
     }
+    post {
+        always {
+            junit 'test-results/unit.xml'
+        }
+    }
 }
