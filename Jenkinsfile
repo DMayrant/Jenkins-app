@@ -3,10 +3,10 @@ pipeline {
 
     environment {
         NETLIFY_SITE_ID = 'f7d42348-d921-4174-94f6-ac97d15455f5'
-      
     }
 
     stages {
+
         stage('Build') {
             agent {
                 docker {
@@ -24,7 +24,7 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('Test') {
             agent {
                 docker {
@@ -32,12 +32,14 @@ pipeline {
                     reuseNode true
                 }
             }
-            
             steps {
                 sh '''
+                    # Ensure JUnit reporting is available 
                     npm install --save-dev jest-junit
+
+                    # Create Jest JUnit config dynamically
                     mkdir -p test-results
-                      cat <<EOF > jest.config.js
+                    cat <<EOF > jest.config.js
                     module.exports = {
                       testResultsProcessor: "jest-junit",
                     };
@@ -52,11 +54,10 @@ pipeline {
 
                     test -f build/index.html
                     npm test
-        
                 '''
             }
         }
-    
+
         stage('E2E') {
             agent {
                 docker {
@@ -64,17 +65,15 @@ pipeline {
                     reuseNode true
                 }
             }
-            
             steps {
                 sh '''
-                  npm install serve
-                  node_modules/.bin/serve -s build &
-                  npx playwright test --reporter=html
-
+                    npm install serve
+                    node_modules/.bin/serve -s build &
+                    npx playwright test --reporter=html
                 '''
             }
-        }    
-       
+        }
+
         stage('Deploy') {
             agent {
                 docker {
@@ -87,14 +86,15 @@ pipeline {
                     npm install netlify-cli
                     node_modules/.bin/netlify --version
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    
                 '''
             }
         }
     }
+
     post {
         always {
-            junit 'test-results/unit.xml'
+            // Correct XML file location
+            junit 'test-results/junit.xml'
         }
     }
 }
