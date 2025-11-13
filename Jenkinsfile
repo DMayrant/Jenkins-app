@@ -21,47 +21,49 @@ pipeline {
                     npm --version
                     npm install
                     npm run build
+                    ls -la
                 '''
             }
         }
 
-        stage('E2E Tests') {
-            agent {
-                docker {
-                    image 'mcr.microsoft.com/playwright:v1.56.1-jammy'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                    npm install serve
-                    node_modules/.bin/serve -s build &
-                    sleep 10
-                    npx playwright test --reporter=html
-                '''
-            }
-        }
+        stage('Run tests') {
+            parallel {
 
-        stage('Deploy') {
-            when {
-                branch 'main'  // optional but recommended
-            }
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
+                stage('Deploy') {
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                            npm install netlify-cli
+                            node_modules/.bin/netlify --version
+                            echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+                        '''
+                    }
                 }
-            }
-            steps {
-                sh '''
-                    npm install netlify-cli
-                    node_modules/.bin/netlify --version
-                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    # Example deploy command:
-                    # node_modules/.bin/netlify deploy --prod --dir=build --site=$NETLIFY_SITE_ID
-                '''
-            }
-        }
+
+                stage('E2E') {
+                    agent {
+                        docker {
+                            image 'mcr.microsoft.com/playwright:v1.56.1-jammy'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                            npm install serve
+                            node_modules/.bin/serve -s build &
+                            sleep 10
+                            npx playwright test --reporter=html
+                        '''
+                    }
+                }
+
+            } // end parallel
+        } // end stage Run tests
 
     } // end stages
 } // end pipeline
