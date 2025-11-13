@@ -35,8 +35,24 @@ pipeline {
             
             steps {
                 sh '''
+                    npm install --save-dev jest-junit
+                    mkdir -p test-results
+                      cat <<EOF > jest.config.js
+                    module.exports = {
+                      testResultsProcessor: "jest-junit",
+                    };
+                    EOF
+
+                    cat <<EOF > jest-junit.json
+                    {
+                      "outputDirectory": "test-results",
+                      "outputName": "junit.xml"
+                    }
+                    EOF
+
                     test -f build/index.html
                     npm test
+        
                 '''
             }
         }
@@ -69,7 +85,6 @@ pipeline {
             steps {
                 sh '''
                     npm install netlify-cli
-                    npm install --save-dev jest-junit
                     node_modules/.bin/netlify --version
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                     
