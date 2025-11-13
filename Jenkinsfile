@@ -3,10 +3,10 @@ pipeline {
 
     environment {
         NETLIFY_SITE_ID = 'f7d42348-d921-4174-94f6-ac97d15455f5'
+      
     }
 
     stages {
-
         stage('Build') {
             agent {
                 docker {
@@ -24,7 +24,7 @@ pipeline {
                 '''
             }
         }
-
+        
         stage('Test') {
             agent {
                 docker {
@@ -32,32 +32,15 @@ pipeline {
                     reuseNode true
                 }
             }
+            
             steps {
                 sh '''
-                    # Ensure JUnit reporting is available 
-                    npm install --save-dev jest-junit
-
-                    # Create Jest JUnit config dynamically
-                    mkdir -p test-results
-                    cat <<EOF > jest.config.js
-                    module.exports = {
-                      testResultsProcessor: "jest-junit",
-                    };
-                    EOF
-
-                    cat <<EOF > jest-junit.json
-                    {
-                      "outputDirectory": "test-results",
-                      "outputName": "junit.xml"
-                    }
-                    EOF
-
                     test -f build/index.html
                     npm test
                 '''
             }
         }
-
+    
         stage('E2E') {
             agent {
                 docker {
@@ -65,15 +48,17 @@ pipeline {
                     reuseNode true
                 }
             }
+            
             steps {
                 sh '''
-                    npm install serve
-                    node_modules/.bin/serve -s build &
-                    npx playwright test --reporter=html
+                  npm install serve
+                  node_modules/.bin/serve -s build &
+                  npx playwright test --reporter=html
+
                 '''
             }
-        }
-
+        }    
+       
         stage('Deploy') {
             agent {
                 docker {
@@ -88,13 +73,6 @@ pipeline {
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                 '''
             }
-        }
-    }
-
-    post {
-        always {
-            // Correct XML file location
-            junit 'test-results/junit.xml'
         }
     }
 }
