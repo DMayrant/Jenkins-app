@@ -30,7 +30,7 @@ pipeline {
         stage('Run tests') {
             parallel {
 
-                stage('Deploy') {
+                stage('Deploy (dry-run)') {
                     agent {
                         docker {
                             image 'node:18-alpine'
@@ -41,7 +41,7 @@ pipeline {
                         sh '''
                             npm install netlify-cli
                             node_modules/.bin/netlify --version
-                            echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+                            echo "Dry deploy check. Site ID: $NETLIFY_SITE_ID"
                         '''
                     }
                 }
@@ -64,23 +64,31 @@ pipeline {
                 }
 
             } // end parallel
-        } 
-        stage('Deploy') {
+        }
+
+        stage('Deploy to Netlify') {
             agent {
                 docker {
                     image 'node:18-alpine'
-                    reuseNode true // end stage Run tests
+                    reuseNode true
                 }
             }
             steps {
                 sh '''
                     npm install netlify-cli
                     node_modules/.bin/netlify --version
-                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+
+                    echo "Deploying to Netlify production..."
+                    echo "Site ID: $NETLIFY_SITE_ID"
+
+                    # Optional: Show Netlify site info  
                     node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --prod
-                '''    
+
+                    # IMPORTANT FIX: prevent Netlify from trying to run npm run build
+                    node_modules/.bin/netlify deploy --dir=build --prod --no-build
+                '''
             }
         }
-    }   
+
+    } // end stages
 } // end pipeline
