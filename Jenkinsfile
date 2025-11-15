@@ -17,6 +17,7 @@ pipeline {
             }
             steps {
                 sh '''
+
                     ls -la
                     node --version
                     npm --version
@@ -30,7 +31,7 @@ pipeline {
         stage('Run tests') {
             parallel {
 
-                stage('Deploy (dry-run)') {
+                stage('Deploy') {
                     agent {
                         docker {
                             image 'node:18-alpine'
@@ -41,7 +42,7 @@ pipeline {
                         sh '''
                             npm install netlify-cli
                             node_modules/.bin/netlify --version
-                            echo "Dry deploy check. Site ID: $NETLIFY_SITE_ID"
+                            echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                         '''
                     }
                 }
@@ -64,31 +65,23 @@ pipeline {
                 }
 
             } // end parallel
-        }
-
-        stage('Deploy to Netlify') {
+        } 
+        stage('Deploy') {
             agent {
                 docker {
                     image 'node:18-alpine'
-                    reuseNode true
+                    reuseNode true // end stage Run tests
                 }
             }
             steps {
                 sh '''
                     npm install netlify-cli
                     node_modules/.bin/netlify --version
-
-                    echo "Deploying to Netlify production..."
-                    echo "Site ID: $NETLIFY_SITE_ID"
-
-                    # Optional: Show Netlify site info  
+                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
-
-                    # IMPORTANT FIX: prevent Netlify from trying to run npm run build
-                    node_modules/.bin/netlify deploy --dir=build --prod --no-build
-                '''
+                    node_modules/.bin/netlify deploy --dir=build --prod
+                '''    
             }
         }
-
-    } // end stages
+    }   
 } // end pipeline
