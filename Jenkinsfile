@@ -31,18 +31,24 @@ pipeline {
             parallel {
 
                 stage('Deploy (dry-run)') {
+                    ...
+                }
+
+                stage('E2E') {
                     agent {
                         docker {
-                            image 'node:18-alpine'
+                            image 'mcr.microsoft.com/playwright:v1.56.1-jammy'
                             reuseNode true
                         }
                     }
                     steps {
+                        unstash 'app-build'
                         sh '''
-                            npm install netlify-cli
-                            node_modules/.bin/netlify --version
-                            echo "Dry deploy check. Site ID: $NETLIFY_SITE_ID"
-                        '''
+                            npm install serve
+                            node_modules/.bin/serve -s build &
+                            sleep 10
+                            npx playwright test --reporter=html
+                        '''       
                     }
                 }
 
@@ -85,7 +91,7 @@ pipeline {
                     node_modules/.bin/netlify status
 
                     # IMPORTANT FIX: prevent Netlify from trying to run npm run build
-                    node_modules/.bin/netlify deploy --dir=build --prod --no-build
+                    node_modules/.bin/netlify deploy --dir=build --json
                 '''
             }
         }
