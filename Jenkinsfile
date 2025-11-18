@@ -24,6 +24,7 @@ pipeline {
                     npm run build
                     ls -la
                 '''
+                stash includes: 'build/**', name: 'app-build'
             }
         }
 
@@ -31,10 +32,24 @@ pipeline {
             parallel {
 
                 stage('Deploy (dry-run)') {
-                    ...
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                            npm install netlify-cli
+                            node_modules/.bin/netlify --version
+
+                            echo "Dry run deploy..."
+                            node_modules/.bin/netlify deploy --dir=build --json --dry
+                        '''
+                    }
                 }
 
-                stage('E2E') {
+                stage('E2E Tests') {
                     agent {
                         docker {
                             image 'mcr.microsoft.com/playwright:v1.56.1-jammy'
@@ -49,23 +64,6 @@ pipeline {
                             sleep 10
                             npx playwright test --reporter=html
                         '''       
-                    }
-                }
-
-                stage('E2E') {
-                    agent {
-                        docker {
-                            image 'mcr.microsoft.com/playwright:v1.56.1-jammy'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh '''
-                            npm install serve
-                            node_modules/.bin/serve -s build &
-                            sleep 10
-                            npx playwright test --reporter=html
-                        '''
                     }
                 }
 
@@ -84,24 +82,25 @@ pipeline {
                     npm install netlify-cli
                     node_modules/.bin/netlify --version
 
-                    echo "Deploying to Netlify production..."
+                    echo "Deploying to Netlify (preview)..."
                     echo "Site ID: $NETLIFY_SITE_ID"
 
-                    # Optional: Show Netlify site info  
                     node_modules/.bin/netlify status
 
-                    # IMPORTANT FIX: prevent Netlify from trying to run npm run build
+                    # Deploy preview - no build
                     node_modules/.bin/netlify deploy --dir=build --json
                 '''
             }
         }
+
         stage('Approval') {
             steps {
                 timeout(time: 15, unit: 'MINUTES') {
-                    input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
+                    input message: 'Do you wish to deploy to production?', ok: 'Yes, deploy to prod'
                 }                 
             }
         }
+
         stage('Deploy prod') {
             agent {
                 docker {
@@ -117,10 +116,9 @@ pipeline {
                     echo "Deploying to Netlify production..."
                     echo "Site ID: $NETLIFY_SITE_ID"
 
-                    # Optional: Show Netlify site info  
                     node_modules/.bin/netlify status
 
-                    # IMPORTANT FIX: prevent Netlify from trying to run npm run build
+                    # Final production deploy
                     node_modules/.bin/netlify deploy --dir=build --prod --no-build
                 '''
             }
