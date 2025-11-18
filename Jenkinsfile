@@ -91,8 +91,32 @@ pipeline {
         }
         stage('Approval') {
             steps {
-               input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
-   
+                timeout(time: 15, unit: 'MINUTES') {
+                    input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
+                }                 
+            }
+        }
+        stage('Deploy prod') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+
+                    echo "Deploying to Netlify production..."
+                    echo "Site ID: $NETLIFY_SITE_ID"
+
+                    # Optional: Show Netlify site info  
+                    node_modules/.bin/netlify status
+
+                    # IMPORTANT FIX: prevent Netlify from trying to run npm run build
+                    node_modules/.bin/netlify deploy --dir=build --prod --no-build
+                '''
             }
         }
 
